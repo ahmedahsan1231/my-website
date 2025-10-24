@@ -1,34 +1,111 @@
-صفحة دردشة حمودي — Social Live :root{--bg:#0b0b0f;--panel:#111218;--accent:#1db954;--muted:#9aa0a6} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans Arabic',sans-serif;background:var(--bg);color:#eee} header{background:linear-gradient(90deg,#0f1720, #0b1220);padding:12px 16px;display:flex;align-items:center;gap:12px} .brand{font-weight:700;font-size:18px} .subtitle{font-size:12px;color:var(--muted)} main{display:grid;grid-template-columns:1fr 360px;gap:12px;padding:12px} .stage{background:linear-gradient(180deg,#0a0b0d 0%, #0f1318 100%);border-radius:12px;padding:12px;min-height:70vh;position:relative;overflow:hidden} video#local,video#remote{width:100%;height:100%;object-fit:cover;border-radius:8px} .controls{position:absolute;left:12px;bottom:12px;display:flex;gap:8px} button{background:var(--panel);border:1px solid rgba(255,255,255,0.04);color:#fff;padding:8px 10px;border-radius:8px;cursor:pointer} .side{background:var(--panel);border-radius:12px;padding:12px;min-height:70vh;display:flex;flex-direction:column} .room-info{display:flex;flex-direction:column;gap:6px;margin-bottom:8px} .floating-comments{position:absolute;right:8px;top:8px;width:320px;pointer-events:none} .comment{background:rgba(255,255,255,0.06);padding:6px 10px;border-radius:999px;margin-top:8px;display:inline-block;animation:float 8s linear both} @keyframes float{0%{transform:translateY(20px);opacity:0}10%{opacity:1}100%{transform:translateY(-120px);opacity:0}} .chat-list{flex:1;overflow:auto;padding:8px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent)} .chat-item{padding:8px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02)} .send{display:flex;gap:8px;margin-top:8px} input[type=text]{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#fff} .small{font-size:12px;color:var(--muted)} 
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>دردشة حمودي الاجتماعية — WebRTC محلية</title>
+<style>
+:root{--bg:#0b0b0f;--panel:#111218;--accent:#1db954;--muted:#9aa0a6}
+body{margin:0;font-family:'Segoe UI',Tahoma,'Noto Sans Arabic',sans-serif;background:var(--bg);color:#eee}
+header{background:linear-gradient(90deg,#0f1720,#0b1220);padding:12px 16px}
+.brand{font-weight:700;font-size:18px}
+.subtitle{font-size:12px;color:var(--muted)}
+main{display:flex;flex-direction:column;gap:10px;padding:12px;max-width:700px;margin:auto}
+.video-area{position:relative;background:var(--panel);border-radius:12px;overflow:hidden}
+video{width:100%;border-radius:12px;background:#000}
+.chat-box{background:var(--panel);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.chat-list{max-height:300px;overflow:auto;background:rgba(255,255,255,0.02);padding:8px;border-radius:8px}
+.chat-item{margin-bottom:4px}
+.send{display:flex;gap:8px}
+input[type=text]{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#fff}
+button{background:var(--accent);border:none;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+button:hover{opacity:0.9}
+.small{font-size:12px;color:var(--muted)}
+.comment-float{position:absolute;right:10px;top:10px;pointer-events:none}
+.comment{background:rgba(255,255,255,0.1);padding:6px 10px;border-radius:999px;margin-top:6px;animation:float 8s linear both}
+@keyframes float{0%{transform:translateY(30px);opacity:0}10%{opacity:1}100%{transform:translateY(-120px);opacity:0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">صفحة حمودي</div>
+  <div class="subtitle">دردشة اجتماعية تجريبية (محلية فقط)</div>
+</header>
 
-اسم الصفحة: صفحة حمودي
+<main>
+  <div class="video-area">
+    <video id="local" autoplay muted playsinline></video>
+    <div class="comment-float" id="float"></div>
+  </div>
 
-دردشة اجتماعية بسيطة — WebRTC + Hamoudi signaling
+  <div class="chat-box">
+    <div>اسم جهازك: <strong id="devicename">جارٍ التوليد...</strong></div>
+    <div class="chat-list" id="chatlist"></div>
+    <div class="send">
+      <input id="msg" type="text" placeholder="اكتب رسالة..." />
+      <button id="send">إرسال</button>
+    </div>
+    <div class="small">⚠️ هذه نسخة تجريبية محلية فقط، تعمل بدون خادم فعلي.</div>
+  </div>
+</main>
 
-بدء الكاميرا/الصوت انضمام / إنشاء غرفة مغادرة 
+<script>
+function randomName(){
+  const ua=navigator.userAgent;
+  const m=ua.match(/(SM-|Pixel|iPhone|Windows|Mac)/i);
+  const core=(m?m[0]:'جهاز')+Math.random().toString(36).slice(2,5).toUpperCase();
+  return core;
+}
+const nameEl=document.getElementById('devicename');
+const deviceName=randomName();
+nameEl.textContent=deviceName;
 
-اسم جهازك: جارٍ الاكتشاف...
+const chatlist=document.getElementById('chatlist');
+const msg=document.getElementById('msg');
+const send=document.getElementById('send');
+const float=document.getElementById('float');
+const localV=document.getElementById('local');
 
-سيرفر الإشارات: Hamoudi (ws://localhost:8080)
+async function initCam(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    localV.srcObject=stream;
+  }catch(e){
+    console.warn(e);
+  }
+}
+initCam();
 
-إرسال 
+function addChat(name,text,showFloat=true){
+  const d=document.createElement('div');
+  d.className='chat-item';
+  d.innerHTML=`<strong>${name}</strong>: ${text}`;
+  chatlist.appendChild(d);
+  chatlist.scrollTop=chatlist.scrollHeight;
 
-// ---------- إعداد اسم الجهاز المصنع الخاص بالمستخدم ---------- function makeManufacturedName(){ const ua = navigator.userAgent || ''; const platform = navigator.platform || ''; // احصل على أجزاء مفيدة من userAgent const m = ua.match(/\b(Pixel|SM-|SAMSUNG|iPhone|iPad|Android|Windows NT|Macintosh|Edg|Chrome|Firefox)\b/gi) || []; const core = (m[0]||platform||'Device').toString().replace(/[^a-zA-Z0-9\-]/g,''); const short = Math.random().toString(36).slice(2,7).toUpperCase(); return core + '-' + short; } const deviceName = makeManufacturedName(); document.getElementById('device-name').textContent = deviceName; // ---------- عناصر DOM ---------- const localV = document.getElementById('local'); const remoteV = document.getElementById('remote'); const startBtn = document.getElementById('startBtn'); const joinBtn = document.getElementById('joinBtn'); const leaveBtn = document.getElementById('leaveBtn'); const sendBtn = document.getElementById('sendBtn'); const txt = document.getElementById('txt'); const chatList = document.getElementById('chatList'); const floating = document.getElementById('floating'); // ---------- متغيرات WebRTC و WebSocket (Signaling) ---------- let pc = null; let dc = null; // data channel let localStream = null; let ws = null; const SIGNAL_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'ws://localhost:8080' : 'wss://example.com'; const ROOM = 'hamoudi'; // ---------- واجهة مساعدة لإضافة رسالة إلى القائمة وطفو التعليقات ---------- function addChatMessage(author, text, floatingComment=false){ const el = document.createElement('div'); el.className = 'chat-item'; el.innerHTML = ''+escapeHtml(author)+': '+escapeHtml(text); chatList.appendChild(el); chatList.scrollTop = chatList.scrollHeight; if(floatingComment){ const f = document.createElement('div'); f.className = 'comment'; f.textContent = author+': '+text; floating.appendChild(f); setTimeout(()=>f.remove(),9000); } } function escapeHtml(s){return (s+'').replace(/[&({ '&':'&','':'>','"':'"',"'":"'" })[c])} // ---------- بدء الكاميرا والصوت ---------- startBtn.addEventListener('click', async ()=>{ try{ localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true}); localV.srcObject = localStream; addChatMessage('النظام','الكاميرا والصوت جاهزان'); }catch(err){ console.error(err);addChatMessage('النظام','فشل الوصول للكاميرا/الصوت: '+err.message); } }); // ---------- ربط إلى سيرفر الإشارات (Hamoudi) ---------- joinBtn.addEventListener('click', ()=>{ if(ws && ws.readyState===WebSocket.OPEN){ addChatMessage('النظام','متصل بالفعل بسيرفر الإشارات'); return; } ws = new WebSocket(SIGNAL_URL); ws.addEventListener('open', ()=>{ addChatMessage('النظام','تم الاتصال بسيرفر الإشارات Hamoudi'); ws.send(JSON.stringify({type:'join',room:ROOM,device:deviceName})); preparePeer(true); }); ws.addEventListener('message', async (ev)=>{ const msg = JSON.parse(ev.data); if(msg.type==='offer'){ await preparePeer(false); await pc.setRemoteDescription(new RTCSessionDescription(msg.offer)); const answer = await pc.createAnswer(); await pc.setLocalDescription(answer); ws.send(JSON.stringify({type:'answer',room:ROOM,answer})); }else if(msg.type==='answer'){ await pc.setRemoteDescription(new RTCSessionDescription(msg.answer)); }else if(msg.type==='candidate'){ try{ await pc.addIceCandidate(msg.candidate); }catch(e){console.warn('ICE add failed',e)} }else if(msg.type==='joined'){ addChatMessage('النظام','انضمام إلى الغرفة: '+msg.room+' (أعضاء:'+msg.count+')'); } }); ws.addEventListener('close', ()=>{ addChatMessage('النظام','انقطع اتصال الإشارة'); }); ws.addEventListener('error', (e)=>{ console.error(e); addChatMessage('النظام','خطأ في WebSocket'); }); }); leaveBtn.addEventListener('click', ()=>{ if(ws) ws.close(); if(pc){ pc.close(); pc=null; } if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; } remoteV.srcObject = null; localV.srcObject = null; addChatMessage('النظام','غادرت الغرفة'); }); // ---------- إعداد PeerConnection و DataChannel ---------- async function preparePeer(initiator){ if(pc) return; pc = new RTCPeerConnection({iceServers:[{urls:['stun:stun.l.google.com:19302']} ]}); pc.onicecandidate = e=>{ if(e.candidate && ws && ws.readyState===WebSocket.OPEN){ ws.send(JSON.stringify({type:'candidate',room:ROOM,candidate:e.candidate})); }}; pc.ontrack = e=>{ remoteV.srcObject = e.streams[0]; }; if(localStream){ localStream.getTracks().forEach(t=>pc.addTrack(t,localStream)); } if(initiator){ dc = pc.createDataChannel('chat'); setupDataChannel(dc); const offer = await pc.createOffer(); await pc.setLocalDescription(offer); // أرسل العرض إلى الخادم if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'offer',room:ROOM,offer})); }else{ pc.ondatachannel = e=>{ dc = e.channel; setupDataChannel(dc); }; } } function setupDataChannel(channel){ channel.onopen = ()=>{ addChatMessage('النظام','قناة البيانات مفتوحة'); }; channel.onmessage = e=>{ try{ const obj = JSON.parse(e.data); addChatMessage(obj.from, obj.text); if(Math.random(){ if(e.key==='Enter') sendMessage(); }); function sendMessage(){ const text = txt.value.trim(); if(!text) return; txt.value=''; const payload = {from:deviceName,text}; // 1) عرض محلي addChatMessage(deviceName,text,true); // 2) إرسال عبر قناة البيانات إن وُجدت if(dc && dc.readyState==='open'){ dc.send(JSON.stringify(payload)); }else{ // كحل بديل: إرسال للـ signaling server كبوت للعرض العام (ليس P2P) if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'pubmsg',room:ROOM,payload})); } } function addFloating(author,text){ const f = document.createElement('div'); f.className='comment'; f.textContent = author+': '+text; floating.appendChild(f); setTimeout(()=>f.remove(),9000); } // ---------- استقبال رسائل عامة من السيرفر ---------- // الخادم يرسل نوع 'pubmsg' للكل // هذه الميزة بسيطة: يعرض الرسائل العامة إلى المستخدمين الذين لم يتصلوا P2P // نهاية السكربت 
+  if(showFloat){
+    const f=document.createElement('div');
+    f.className='comment';
+    f.textContent=`${name}: ${text}`;
+    float.appendChild(f);
+    setTimeout(()=>f.remove(),8000);
+  }
+}
 
-/* hamoudi-server.js Node.js signaling server بسيط باستخدام ws لتشغيل: npm init -y && npm install ws ثم: node hamoudi-server.js */
+send.onclick=()=>{
+  const text=msg.value.trim();
+  if(!text) return;
+  msg.value='';
+  addChat(deviceName,text,true);
+  // لأن لا يوجد خادم فعلي، نحاكي ردود عشوائية
+  setTimeout(()=>{
+    const replies=['👍','😂','😮','رائع!','هههه','اتفق','🔥','💬','ممتاز','😎'];
+    const random=replies[Math.floor(Math.random()*replies.length)];
+    addChat('مستخدم آخر',random,true);
+  },1000+Math.random()*2000);
+};
 
-// ---------- hamoudi-server.js ----------
-
-const serverCode = ` const http = require('http'); const WebSocket = require('ws'); const PORT = process.env.PORT || 8080; const server = http.createServer(); const wss = new WebSocket.Server({server});
-
-// خريطة غرف -> مجموعة من الاتصالات const rooms = new Map();
-
-wss.on('connection', (ws)=>{ ws.room = null; ws.device = null; ws.on('message', (m)=>{ let msg = null; try{ msg = JSON.parse(m); }catch(e){ console.warn('bad json',m); return; } if(msg.type === 'join'){ const room = msg.room || 'hamoudi'; ws.room = room; ws.device = msg.device || 'anon'; if(!rooms.has(room)) rooms.set(room, new Set()); rooms.get(room).add(ws); // أخبر الجميع بأن عضو انضم broadcast(room,{type:'joined',room,device:ws.device,count:rooms.get(room).size}); }else if(msg.type === 'offer' || msg.type === 'answer' || msg.type === 'candidate'){ // أعد توجيه الأحداث إلى باقي أعضاء الغرفة if(ws.room) broadcast(ws.room, Object.assign({},msg), ws); }else if(msg.type === 'pubmsg'){ // رسالة عامة — أعد إرسالها للكل ليظهر كـ 'تعليقات تيك توك' if(ws.room) broadcast(ws.room, {type:'pubmsg',from:ws.device,payload:msg.payload}); } }); ws.on('close', ()=>{ if(ws.room && rooms.has(ws.room)){ rooms.get(ws.room).delete(ws); broadcast(ws.room,{type:'left',device:ws.device,count:rooms.get(ws.room).size}); } }); });
-
-function broadcast(room,msg,except=null){ if(!rooms.has(room)) return; const s = rooms.get(room); const data = JSON.stringify(msg); for(const c of s){ if(c.readyState===WebSocket.OPEN && c!==except) c.send(data); } }
-
-server.on('request',(req,res)=>{ res.writeHead(200); res.end('Hamoudi signaling server'); }); server.listen(PORT, ()=>console.log('Hamoudi signaling server on',PORT)); `;
-
-// اكتب الملف - صفحة الكانفاس لا تدعم تنفيذ ملفات مباشرة لذلك فقط نُطلعك على المحتوى
-
-console.log('لقد أضفت ملفين: index.html و hamoudi-server.js'); console.log('انسخ محتوى hamoudi-server.js من الوثيقة وافتحه في ملف على جهازك لتشغيل السيرفر.');
-
+msg.addEventListener('keydown',e=>{if(e.key==='Enter')send.click();});
+</script>
+</body>
+  </html>
